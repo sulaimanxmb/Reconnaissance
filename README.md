@@ -2,12 +2,12 @@
 This is my own custom recon automated script for bug bounties
 
 #### Tools Used :
-1.subfinder/n
-2.dnsx\n
-3.httpx\n
-4.katana\n
-5.naabu\n
-6.nmap\n
+1.subfinder<br>
+2.dnsx<br>
+3.httpx<br>
+4.katana<br>
+5.naabu<br>
+6.nmap<br>
 
 
 #### Working of script :
