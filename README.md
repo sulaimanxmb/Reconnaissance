@@ -23,14 +23,14 @@ subfinder -silent -d (domains) -o subdomains_raw.txt
 After that all duplicates and empty lines r removed and stored in targets.txt
 
 After that DNSX reslution is done with dsnx:
-```shell
+```bash
 dnsx -l "targets.txt" -silent -a -aaaa -resp -t 50 \
     -o "dnsx_tmp.txt"
 ```
 then from that file only the subdomains are extracted and kept in dnsx_subdomains.txt and the other file is deleted
 
 After that this dnsx_subdomains.txt is probed by httpx and make 2 files :
-```shell
+```bash
 # In fast mode it uses predefined ports
 httpx -l dnsx_subdomains.txt -silent -follow-redirects -random-agent \
     -ports "$HTTPX_PORTS" -timeout 10 -retries 2 -threads 50 \
@@ -44,7 +44,7 @@ httpx -l dnsx_subdomains.txt -silent -follow-redirects -random-agent \
 ```
 
 After that the live_urls.txt for web crawling by katana (depending on fast or full mode parameters change) :
-```shell
+```bash
 katana -list live_urls.txt \
     -d "$KATANA_DEPTH" \
     -c "$KATANA_CONC" \
@@ -59,7 +59,7 @@ katana -list live_urls.txt \
 and then filtering takes place creating a url, api and js files
 
 After that the port scanning happens with naabu :
-```shell
+```bash
 naabu -list "$targets_file" -silent $NAABU_FLAGS \
     | grep -vE ':(80|443)$' \
     > dnsx_subdomains.txt
