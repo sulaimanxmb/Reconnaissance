@@ -12,7 +12,7 @@ This is my own custom recon automated script for bug bounties
 
 #### Working of script :
 First the subdomains are discovered using :
-```shell
+```bash
 #In full mode:
 subfinder -silent -all -recursive -t 50 -timeout 10 -d (domain) -o subdomains_raw.txt
 
