@@ -2,7 +2,7 @@
 This is my own custom recon automated script for bug bounties
 
 #### Tools Used :
-1.subfinder\n
+1.subfinder/n
 2.dnsx\n
 3.httpx\n
 4.katana\n
