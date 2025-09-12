@@ -1,0 +1,64 @@
+# Web Services
+80      # HTTP
+443     # HTTPS
+8080    # HTTP-alt / Proxies / Admin panels
+8443    # HTTPS-alt / Admin panels
+8000    # Web servers / APIs
+8888    # Jupyter / Alternate HTTP
+9000    # Web dashboards / SonarQube / PHP-FPM
+3000    # Node.js / React / Dev servers
+5000    # Flask / Gunicorn
+7001    # Oracle WebLogic
+
+# Remote Access & Admin
+22      # SSH
+21      # FTP
+23      # Telnet
+3389    # RDP (Remote Desktop)
+5900    # VNC
+6379    # Redis (Unauthenticated DB)
+
+# Databases
+3306    # MySQL
+5432    # PostgreSQL
+1433    # Microsoft SQL Server
+27017   # MongoDB
+9200    # Elasticsearch (REST API)
+9300    # Elasticsearch (Transport)
+5984    # CouchDB
+
+# Mail & Messaging
+25      # SMTP
+465     # SMTPS
+587     # SMTP (submission)
+110     # POP3
+995     # POP3S
+143     # IMAP
+993     # IMAPS
+389     # LDAP
+636     # LDAPS
+
+# Other Interesting Services
+53      # DNS
+161     # SNMP
+162     # SNMP Trap
+69      # TFTP
+2049    # NFS
+111     # RPCbind
+15672   # RabbitMQ Management
+
+# Cloud / DevOps / Monitoring
+2375    # Docker (API, no TLS)
+2376    # Docker (API, TLS)
+10250   # Kubernetes Kubelet
+10255   # Kubernetes (readonly, deprecated but sometimes exposed)
+6443    # Kubernetes API server
+3000    # Grafana (also dev servers)
+9090    # Prometheus
+9093    # Prometheus Alertmanager
+5601    # Kibana (Elasticsearch frontend)
+8081    # Nexus Repository / Sonatype
+8086    # InfluxDB
+4244    # OpenVPN
+4505    # SaltStack Master
+4506    # SaltStack Minion
