@@ -41,9 +41,45 @@ mkdir -p "$OUTPUT_DIR"
 START_TIME=$(date +%s)
 echo "[*] Mode: $MODE"
 
+# Graceful cleanup on Ctrl+C / termination
+ABORTED=0
+CLEANED=0
+
+cleanup_common() {
+  # kill background jobs if any
+  local children
+  children="$(jobs -p 2>/dev/null || true)"
+  if [ -n "$children" ]; then
+    kill -TERM $children 2>/dev/null || true
+    wait $children 2>/dev/null || true
+  fi
+  # remove temporary files
+  [ -n "${OUTPUT_DIR:-}" ] && rm -f "$OUTPUT_DIR/dnsx_tmp.txt"
+}
+
+on_interrupt() {
+  ABORTED=1
+  echo "[!] Interrupted (Ctrl+C). Cleaning up..."
+  cleanup_common
+  CLEANED=1
+  echo "[*] Partial results kept in: $OUTPUT_DIR"
+  exit 130
+}
+
+on_exit() {
+  local code=$?
+  if [ "$CLEANED" -ne 1 ]; then
+    cleanup_common
+  fi
+  return $code
+}
+
+trap on_interrupt INT TERM
+trap on_exit EXIT
+
 # Mode config
 if [ "$MODE" = "full" ]; then
-  SUBFINDER_FLAGS="-silent -all -recursive -t 50 -timeout 10 -d"
+  SUBFINDER_FLAGS="-silent -all -recursive -t 50 -timeout 10"
   HTTPX_PORTS="80,443,8080,8443,8000,8888,9090,9091,8181,10000,3000,5000,5601,8081"
   KATANA_DEPTH=3
   KATANA_CONC=10
@@ -52,7 +88,7 @@ if [ "$MODE" = "full" ]; then
   NAABU_FLAGS="-pf ports.txt -rate 500"
   RUN_NMAP=1
 else
-  SUBFINDER_FLAGS="-silent -d"
+  SUBFINDER_FLAGS="-silent"
   HTTPX_PORTS="80,443"
   KATANA_DEPTH=2
   KATANA_CONC=5
@@ -87,7 +123,7 @@ check_requirements
 Subdomain_Enumeration() {
   local domain="$1" out_dir="$2"
   echo "[*] Enumerating subdomains ($MODE)..."
-  subfinder $SUBFINDER_FLAGS "$domain" -o "$out_dir/subdomains_raw.txt"
+  subfinder $SUBFINDER_FLAGS -d "$domain" -o "$out_dir/subdomains_raw.txt"
 
   {
     echo "$domain"
