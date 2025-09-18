@@ -9,6 +9,8 @@ Note : Using fast mode will be 55% faster than full mode
 -----
 Note : You must have Seclist downloaded and in the same directory as ur script
 
+----
+
 #### Tools Used :
 1. subfinder<br>
 2. dnsx<br>
@@ -18,6 +20,7 @@ Note : You must have Seclist downloaded and in the same directory as ur script
 6. nmap<br>
 7. git<br>
 
+---
 
 #### Working of script :
 First the subdomains are discovered using :
@@ -80,16 +83,19 @@ After that it runs nmap (only in full mode) :
 ```shell
 nmap -sV -sC -O -T4 -p "$ports" -iL dnsx_subdomains.txt -oN nmap_results.txt
 ```
+----
 
 #### Files created :
-subdomains_raw.txt : raw subfinder output 
-targets.txt : root domain + de-duplicated subdomains_raw.txt
-dsnx_subdomains.txt : Resolvable subdomains from targets.txt
-live_urls.txt : httpx probed/rechable URL's from dnsx_subdomains.txt
-httpx_report.txt : detailed httpx output of live_urls.txt
-katana_raw.txt : raw katana URL's
-katana_urls.txt : unique and sorted URL's from katana_raw.txt
-katana_js.txt : .js URL'S from katana_urls.txt
-katana_api.txt : /api/ or /v1 etc. from katana_urls.txt
-naabu_ports.txt : naabu port scan on domains from targets.txt except http & https
-nmap_results : detailed NMAP scan on targets.txt 
+
+subdomains_raw.txt : raw subfinder output <br>
+targets.txt : root domain + de-duplicated subdomains_raw.txt <br>
+dsnx_subdomains.txt : Resolvable subdomains from targets.txt <br>
+live_urls.txt : httpx probed/rechable URL's from dnsx_subdomains.txt <br>
+httpx_report.txt : detailed httpx output of live_urls.txt <br>
+katana_raw.txt : raw katana URL's <br>
+katana_urls.txt : unique and sorted URL's from katana_raw.txt <br>
+katana_js.txt : .js URL'S from katana_urls.txt <br>
+katana_api.txt : /api/ or /v1 etc. from katana_urls.txt <br>
+naabu_ports.txt : naabu port scan on domains from targets.txt except http & https <br>
+nmap_results : detailed NMAP scan on targets.txt <br>
+-------
