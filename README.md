@@ -7,8 +7,6 @@ This is my own custom automated recon script for bug bounties
 
 Note : Using fast mode will be 55% faster than full mode
 
-Note : You must have Seclist downloaded and in the same directory as ur script
-
 
 
 ## Tools Used :
