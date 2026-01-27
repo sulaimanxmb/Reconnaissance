@@ -1,98 +1,130 @@
-# Recon :
-This is my own custom automated recon script for bug bounties
+# Recon Automation Script
 
-2 modes :
-1. fast
-2. full
+A Bash-based reconnaissance automation script that orchestrates multiple open-source security tools into a structured, repeatable workflow for early-stage security assessment.
 
-Note : Using fast mode will be 55% faster than full mode
+This project focuses on **automation, consistency, and clean output organization**, and is maintained as part of my cybersecurity learning and tooling practice.
 
+---
 
+## Purpose
 
-## Tools Used :
-1. subfinder<br>
-2. dnsx<br>
-3. httpx<br>
-4. katana<br>
-5. naabu<br>
-6. nmap<br>
-7. git<br>
+The purpose of this script is to:
+- Automate repetitive reconnaissance tasks
+- Standardize reconnaissance output per target
+- Improve efficiency during initial attack-surface mapping
+- Demonstrate practical understanding of recon pipelines used in real-world security work
 
+This is **not** an exploitation framework.
 
+---
 
-## Working of script :
-First the subdomains are discovered using :
+## High-Level Workflow (Execution Sequence)
+
+The script follows a strict, linear workflow to ensure clean dependency flow between stages:
+
+1. **Subdomain Enumeration**
+   - Enumerates subdomains for the target domain
+   - Optionally performs recursive discovery (full mode)
+   - Deduplicates and normalizes results
+
+2. **DNS Resolution**
+   - Resolves discovered domains using `dnsx`
+   - Filters only valid, reachable hosts
+   - Prevents downstream scans on dead domains
+
+3. **HTTP Probing**
+   - Probes resolved hosts across defined ports
+   - Detects live web services
+   - Collects metadata (status codes, titles, tech stack, IPs, CDN info)
+
+4. **Web Crawling**
+   - Crawls live web services using `katana`
+   - Extracts:
+     - All discovered URLs
+     - JavaScript files
+     - API and versioned endpoints
+   - Applies file-type exclusions to reduce noise
+
+5. **Port Scanning**
+   - Discovers open ports using `naabu`
+   - Skips common web ports already covered by HTTP probing
+   - Optionally performs service and OS detection with `nmap` (full mode)
+
+6. **Output Organization**
+   - Stores all results in a domain-named directory
+   - Preserves partial results if execution is interrupted
+   - Ensures no destructive operations are performed
+
+---
+
+## Scan Modes
+
+### Fast Mode
+Optimized for speed and rapid surface discovery.
+
+Characteristics:
+- Limited subdomain enumeration
+- Common HTTP ports only (80, 443)
+- Top 100 port scanning
+- No Nmap execution
+- Reduced crawl depth
+
+**Fast mode is approximately 55% faster** than full mode in typical environments, making it suitable for:
+- Initial recon
+- Time-constrained testing
+- Large scope enumeration
+
+---
+
+### Full Mode
+Designed for deeper and more exhaustive reconnaissance.
+
+Characteristics:
+- Recursive subdomain enumeration
+- Expanded HTTP port probing
+- Custom port list support
+- Deeper crawling
+- Nmap service and OS detection enabled
+
+Recommended when accuracy and coverage are prioritized over speed.
+
+---
+
+## Tools Used
+
+This script integrates the following tools:
+
+- `subfinder` – subdomain discovery  
+- `dnsx` – DNS resolution  
+- `httpx` – HTTP probing and fingerprinting  
+- `katana` – web crawling  
+- `naabu` – port discovery  
+- `nmap` – service and OS detection (full mode only)
+
+All tools must be installed and available in `$PATH`.
+
+---
+
+## Requirements
+
+- Linux or Unix-like environment
+- Bash
+- Root privileges (required for certain scanning behaviors)
+- Installed dependencies:
+  - subfinder
+  - dnsx
+  - httpx
+  - katana
+  - naabu
+  - nmap (full mode only)
+- `ports.txt` file present in the working directory (required for full mode)
+
+---
+
+## Usage
+
 ```bash
-#In full mode:
-subfinder -silent -all -recursive -t 50 -timeout 10 -d (domain) -o subdomains_raw.txt
-
-#In fast mode:
-subfinder -silent -d (domains) -o subdomains_raw.txt
+sudo ./recon.sh (domain) (full or fast)
 ```
-
-After that all duplicates and empty lines r removed and stored in targets.txt
-
-After that DNSX reslution is done with dsnx:
-```bash
-dnsx -l "targets.txt" -silent -a -aaaa -resp -t 50 \
-    -o "dnsx_tmp.txt"
-```
-then from that file only the subdomains are extracted and kept in dnsx_subdomains.txt and the other file is deleted
-
-After that this dnsx_subdomains.txt is probed by httpx and make 2 files :
-```bash
-# In fast mode it uses predefined ports
-httpx -l dnsx_subdomains.txt -silent -follow-redirects -random-agent \
-    -ports "$HTTPX_PORTS" -timeout 10 -retries 2 -threads 50 \
-    -o live_urls.txt
-
-# and 
-httpx -l dnsx_subdomains.txt -silent -follow-redirects -random-agent \
-    -ports "$HTTPX_PORTS" -timeout 10 -retries 2 -threads 50 \
-    -status-code -title -tech-detect -ip -cdn -web-server -location \
-    -o httpx_report.txt
-```
-
-After that the live_urls.txt for web crawling by katana (depending on fast or full mode parameters change) :
-```bash
-katana -list live_urls.txt \
-    -d "$KATANA_DEPTH" \
-    -c "$KATANA_CONC" \
-    -p "$KATANA_PARALLEL" \
-    -rl "$KATANA_RATE" \
-    -timeout 10 \
-    -silent \
-    -no-color \
-    -ef png,jpg,jpeg,gif,svg,woff,woff2,css,ico,ttf,otf,mp4 \
-    -o katana_raw.txt
-```
-and then filtering takes place creating a url, api and js files
-
-After that the port scanning happens with naabu :
-```bash
-naabu -list "$targets_file" -silent $NAABU_FLAGS \
-    | grep -vE ':(80|443)$' \
-    > dnsx_subdomains.txt
-```
-it also ignores 80 and 443 stauts codes
-
-
-After that it runs nmap (only in full mode) :
-```shell
-nmap -sV -sC -O -T4 -p "$ports" -iL dnsx_subdomains.txt -oN nmap_results.txt
-```
-
-
-## Files created :
-
-subdomains_raw.txt : raw subfinder output <br>
-targets.txt : root domain + de-duplicated subdomains_raw.txt <br>
-dsnx_subdomains.txt : Resolvable subdomains from targets.txt <br>
-live_urls.txt : httpx probed/rechable URL's from dnsx_subdomains.txt <br>
-httpx_report.txt : detailed httpx output of live_urls.txt <br>
-katana_raw.txt : raw katana URL's <br>
-katana_urls.txt : unique and sorted URL's from katana_raw.txt <br>
-katana_js.txt : .js URL'S from katana_urls.txt <br>
-katana_api.txt : /api/ or /v1 etc. from katana_urls.txt <br>
-naabu_ports.txt : naabu port scan on domains from targets.txt except http & https <br>
-nmap_results : detailed NMAP scan on targets.txt <br>
+Example :
+![](docs/Screenshot%202026-01-27%20at%203.49.44 PM.png)
