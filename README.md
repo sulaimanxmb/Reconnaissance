@@ -1,5 +1,11 @@
 # Recon Automation Script
 
+![Bash](https://img.shields.io/badge/Bash-Script-blue)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Unix-lightgrey)
+![Mode](https://img.shields.io/badge/Mode-Fast%20%7C%20Full-green)
+![License](https://img.shields.io/badge/License-Educational-orange)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+
 A Bash-based reconnaissance automation script that orchestrates multiple open-source security tools into a structured, repeatable workflow for early-stage security assessment.
 
 This project focuses on **automation, consistency, and clean output organization**, and is maintained as part of my cybersecurity learning and tooling practice.
