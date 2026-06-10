@@ -17,6 +17,18 @@ fi
 DOMAIN="${1:-}"
 [ -z "${DOMAIN}" ] && usage
 
+# Accept a pasted URL, but keep only the hostname used by recon tools and paths.
+DOMAIN="${DOMAIN#http://}"
+DOMAIN="${DOMAIN#https://}"
+DOMAIN="${DOMAIN%%/*}"
+DOMAIN="${DOMAIN%%:*}"
+DOMAIN="${DOMAIN%.}"
+DOMAIN="$(printf '%s' "$DOMAIN" | tr '[:upper:]' '[:lower:]')"
+if ! [[ "$DOMAIN" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$ ]]; then
+  echo "Invalid domain: $DOMAIN"
+  usage
+fi
+
 # Mode selection
 MODE="${2:-}"
 if [ -z "$MODE" ]; then
@@ -36,7 +48,10 @@ case "$MODE" in
   *) echo "Invalid mode: $MODE"; usage ;;
 esac
 
-OUTPUT_DIR="$DOMAIN"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPORT_GENERATOR="$SCRIPT_DIR/scripts/generate_report.py"
+DASHBOARD_DIR="$SCRIPT_DIR/web"
+OUTPUT_DIR="$SCRIPT_DIR/results/$DOMAIN"
 mkdir -p "$OUTPUT_DIR"
 START_TIME=$(date +%s)
 echo "[*] Mode: $MODE"
@@ -57,6 +72,61 @@ cleanup_common() {
   [ -n "${OUTPUT_DIR:-}" ] && rm -f "$OUTPUT_DIR/dnsx_tmp.txt"
 }
 
+dashboard_is_running() {
+  python3 -c '
+import json
+import urllib.request
+try:
+    with urllib.request.urlopen("http://127.0.0.1:9999/report.json", timeout=1) as response:
+        report = json.load(response)
+    raise SystemExit(0 if "meta" in report and "summary" in report else 1)
+except Exception:
+    raise SystemExit(1)
+' >/dev/null 2>&1
+}
+
+port_is_in_use() {
+  python3 -c 'import socket; s=socket.socket(); raise SystemExit(0 if s.connect_ex(("127.0.0.1", 9999)) == 0 else 1)' \
+    >/dev/null 2>&1
+}
+
+finalize_dashboard() {
+  local exit_code="$1"
+  local end_time elapsed status
+
+  command -v python3 >/dev/null 2>&1 || {
+    echo "[!] Python 3 unavailable; dashboard was not updated."
+    return 0
+  }
+  [ -f "$REPORT_GENERATOR" ] || {
+    echo "[!] Report generator unavailable; dashboard was not updated."
+    return 0
+  }
+
+  end_time=$(date +%s)
+  elapsed=$((end_time - START_TIME))
+  status="complete"
+  [ "$exit_code" -ne 0 ] || [ "$ABORTED" -eq 1 ] && status="partial"
+
+  echo "[*] Generating $status dashboard report..."
+  python3 "$REPORT_GENERATOR" "$OUTPUT_DIR" "$DOMAIN" "$MODE" "$elapsed" \
+    "$DASHBOARD_DIR/report.json" --status "$status" || {
+      echo "[!] Dashboard report generation failed."
+      return 0
+    }
+
+  if dashboard_is_running; then
+    echo "[*] Dashboard updated at http://localhost:9999"
+  elif port_is_in_use; then
+    echo "[!] Port 9999 is occupied by another application."
+    echo "[!] The report was generated at: $DASHBOARD_DIR/report.json"
+  else
+    echo "[*] Starting dashboard at http://localhost:9999"
+    nohup python3 -m http.server 9999 --bind 127.0.0.1 --directory "$DASHBOARD_DIR" \
+      >"${TMPDIR:-/tmp}/recon-dashboard.log" 2>&1 </dev/null &
+  fi
+}
+
 on_interrupt() {
   ABORTED=1
   echo "[!] Interrupted (Ctrl+C). Cleaning up..."
@@ -68,9 +138,12 @@ on_interrupt() {
 
 on_exit() {
   local code=$?
+  trap - EXIT
+  set +e
   if [ "$CLEANED" -ne 1 ]; then
     cleanup_common
   fi
+  finalize_dashboard "$code"
   return $code
 }
 
@@ -151,10 +224,10 @@ Subdomain_Enumeration() {
   rcount=$(wc -l < "$out_dir/dnsx_subdomains.txt" | tr -d ' ')
   echo "[*] Resolvable hosts: $rcount"
 
-  # FIX 1: Early exit if no resolvable hosts
+  # Stop the scan cleanly if there is nothing useful for later stages.
   if [ "$rcount" -eq 0 ]; then
     echo "[!] No resolvable hosts. Exiting."
-    exit 0
+    return 2
   fi
 
   echo "[*] Probing HTTP (ports: $HTTPX_PORTS) on resolvable hosts..."
@@ -237,9 +310,10 @@ Network_Scan() {
 }
 
 echo "[*] Starting workflow..."
-Subdomain_Enumeration "$DOMAIN" "$OUTPUT_DIR"
-Web_Crawling "$OUTPUT_DIR/live_urls.txt" "$OUTPUT_DIR"
-Network_Scan "$OUTPUT_DIR/dnsx_subdomains.txt" "ports.txt" "$OUTPUT_DIR"
+if Subdomain_Enumeration "$DOMAIN" "$OUTPUT_DIR"; then
+  Web_Crawling "$OUTPUT_DIR/live_urls.txt" "$OUTPUT_DIR"
+  Network_Scan "$OUTPUT_DIR/dnsx_subdomains.txt" "ports.txt" "$OUTPUT_DIR"
+fi
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))

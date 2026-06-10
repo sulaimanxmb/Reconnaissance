@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "domain": "No scan loaded",
+    "mode": "idle",
+    "generatedAt": null,
+    "elapsedSeconds": 0,
+    "status": "idle"
+  },
+  "summary": {
+    "subdomains": 0,
+    "resolvedHosts": 0,
+    "liveUrls": 0,
+    "crawledUrls": 0,
+    "apiEndpoints": 0,
+    "openPorts": 0
+  },
+  "subdomains": [],
+  "resolvedHosts": [],
+  "liveUrls": [],
+  "http": [],
+  "crawledUrls": [],
+  "javascriptFiles": [],
+  "apiEndpoints": [],
+  "ports": [],
+  "nmap": ""
+}

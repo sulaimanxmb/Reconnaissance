@@ -1,3 +1,10 @@
 .DS_Store
 SecLists
 dstny.com
+__pycache__/
+*.py[cod]
+results/
+
+# Local scan output created before results/ became the default location.
+/anikototv.to/
+/https:/

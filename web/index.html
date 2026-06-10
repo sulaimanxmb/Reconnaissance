@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Reconnaissance Report</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    const savedTheme = localStorage.getItem("recon-theme");
+    document.documentElement.dataset.theme = savedTheme ||
+      (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  </script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview" aria-label="Reconnaissance dashboard home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.3c0 4.7 3.2 8.6 7.5 9.7 4.3-1.1 7.5-5 7.5-9.7V6L12 3Z"/><path d="m8.8 12 2.1 2.1 4.5-4.5"/></svg>
+        </span>
+        <span><strong>RECON</strong><small>Intelligence Console</small></span>
+      </a>
+
+      <nav class="nav" aria-label="Dashboard sections">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">⌂</span>Overview</a>
+        <a class="nav-link" href="#assets"><span class="nav-icon">◎</span>Web assets</a>
+        <a class="nav-link" href="#endpoints"><span class="nav-icon">⌁</span>Endpoints</a>
+        <a class="nav-link" href="#network"><span class="nav-icon">⌗</span>Network</a>
+        <a class="nav-link" href="#raw-output"><span class="nav-icon">›_</span>Raw output</a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="local-badge"><span></span>Local dashboard</div>
+        <p>Results stay on this machine.</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Toggle navigation">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><b>/</b><strong>Scan report</strong></div>
+        <div class="topbar-actions">
+          <button class="icon-button" id="refresh-button" aria-label="Refresh report" title="Refresh report">
+            <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+          </button>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">
+            <span class="theme-icon sun">☀</span><span class="theme-icon moon">☾</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <section class="hero" id="overview">
+          <div>
+            <div class="eyebrow"><span class="pulse-dot"></span><span id="scan-status">REPORT READY</span></div>
+            <h1 id="domain-title">Loading report...</h1>
+            <p>Consolidated attack-surface intelligence from your latest authorized reconnaissance run.</p>
+            <div class="meta-row">
+              <span id="mode-badge" class="pill">-- mode</span>
+              <span id="generated-time">Waiting for data</span>
+              <span id="elapsed-time">0s elapsed</span>
+            </div>
+          </div>
+          <div class="hero-radar" aria-hidden="true">
+            <div class="radar-ring ring-one"></div><div class="radar-ring ring-two"></div>
+            <div class="radar-line"></div><div class="radar-core"></div>
+          </div>
+        </section>
+
+        <section class="stats-grid" aria-label="Scan summary">
+          <article class="stat-card accent-cyan"><span class="stat-label">Subdomains</span><strong data-stat="subdomains">0</strong><small>Discovered targets</small></article>
+          <article class="stat-card accent-green"><span class="stat-label">Resolved hosts</span><strong data-stat="resolvedHosts">0</strong><small>DNS validated</small></article>
+          <article class="stat-card accent-violet"><span class="stat-label">Live services</span><strong data-stat="liveUrls">0</strong><small>HTTP endpoints</small></article>
+          <article class="stat-card accent-amber"><span class="stat-label">Open ports</span><strong data-stat="openPorts">0</strong><small>Network exposure</small></article>
+        </section>
+
+        <section class="dashboard-grid" id="assets">
+          <article class="panel span-2">
+            <div class="panel-head">
+              <div><span class="section-kicker">HTTP PROBING</span><h2>Live web assets</h2></div>
+              <div class="table-tools"><label class="search"><span>⌕</span><input id="asset-search" type="search" placeholder="Filter assets..."></label></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>URL</th><th>Status</th><th>Title</th><th>IP address</th><th>Technology</th></tr></thead>
+                <tbody id="http-table"></tbody>
+              </table>
+              <div class="empty-state" id="http-empty"><span>◎</span><strong>No live assets found</strong><p>Run a scan to populate this view.</p></div>
+            </div>
+          </article>
+
+          <article class="panel activity-panel">
+            <div class="panel-head"><div><span class="section-kicker">COVERAGE</span><h2>Discovery profile</h2></div></div>
+            <div class="coverage-chart" id="coverage-chart"></div>
+            <div class="legend" id="coverage-legend"></div>
+          </article>
+        </section>
+
+        <section class="panel" id="endpoints">
+          <div class="panel-head">
+            <div><span class="section-kicker">CRAWLER OUTPUT</span><h2>Discovered endpoints</h2></div>
+            <div class="segmented" role="tablist">
+              <button class="segment active" data-endpoint-view="api">API</button>
+              <button class="segment" data-endpoint-view="javascript">JavaScript</button>
+              <button class="segment" data-endpoint-view="all">All URLs</button>
+            </div>
+          </div>
+          <div class="endpoint-list" id="endpoint-list"></div>
+        </section>
+
+        <section class="dashboard-grid" id="network">
+          <article class="panel">
+            <div class="panel-head"><div><span class="section-kicker">NAABU</span><h2>Open ports</h2></div><span class="count-badge" id="port-count">0 found</span></div>
+            <div class="port-grid" id="port-grid"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><span class="section-kicker">DNS RESOLUTION</span><h2>Resolved hosts</h2></div><span class="count-badge" id="host-count">0 hosts</span></div>
+            <div class="host-list" id="host-list"></div>
+          </article>
+        </section>
+
+        <section class="panel terminal-panel" id="raw-output">
+          <div class="panel-head"><div><span class="section-kicker">NMAP</span><h2>Service intelligence</h2></div><button class="copy-button" id="copy-output">Copy output</button></div>
+          <pre id="nmap-output"><code>No Nmap output available for this scan.</code></pre>
+        </section>
+
+        <footer><span>Reconnaissance Intelligence Console</span><span>For authorized security testing only</span></footer>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

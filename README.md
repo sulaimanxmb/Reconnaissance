@@ -1,136 +1,175 @@
-# Recon Automation Script
+# Reconnaissance Automation Dashboard
 
-![Bash](https://img.shields.io/badge/Bash-Script-blue)
+![Bash](https://img.shields.io/badge/Bash-Automation-blue)
+![Python](https://img.shields.io/badge/Python-Report_Generator-3776AB)
+![Dashboard](https://img.shields.io/badge/Dashboard-HTML%20%7C%20CSS%20%7C%20JavaScript-22c55e)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Unix-lightgrey)
-![Mode](https://img.shields.io/badge/Mode-Fast%20%7C%20Full-green)
-![License](https://img.shields.io/badge/License-Educational-orange)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+![License](https://img.shields.io/badge/Use-Authorized_Testing-orange)
 
-A Bash-based reconnaissance automation script that orchestrates multiple open-source security tools into a structured, repeatable workflow for early-stage security assessment.
+A Bash-based reconnaissance pipeline that orchestrates popular open-source security tools, preserves structured scan output, and presents the results in a responsive local web dashboard.
 
-This project focuses on **automation, consistency, and clean output organization**, and is maintained as part of my cybersecurity learning and tooling practice.
+The project focuses on repeatable reconnaissance, clean output organization, and readable reporting. It is not an exploitation framework and must only be used against systems you own or have explicit permission to assess.
 
----
+## Features
 
-## Purpose
+- Fast and full reconnaissance modes
+- Subdomain enumeration and DNS validation
+- HTTP service probing and technology detection
+- URL, JavaScript, and API endpoint discovery
+- Port scanning and optional Nmap service detection
+- JSON report generation from raw tool output
+- Modern local dashboard at `http://localhost:9999`
+- Persistent dark and light themes
+- Searchable assets and selectable, one-click-copy endpoints
+- Partial report recovery when a scan fails or is interrupted
+- Local-only server binding to `127.0.0.1`
 
-The purpose of this script is to:
-- Automate repetitive reconnaissance tasks
-- Standardize reconnaissance output per target
-- Improve efficiency during initial attack-surface mapping
-- Demonstrate practical understanding of recon pipelines used in real-world security work
+## Workflow
 
-This is **not** an exploitation framework.
-
----
-
-## High-Level Workflow (Execution Sequence)
-
-The script follows a strict, linear workflow to ensure clean dependency flow between stages:
-
-1. **Subdomain Enumeration**
-   - Enumerates subdomains for the target domain
-   - Optionally performs recursive discovery (full mode)
-   - Deduplicates and normalizes results
-
-2. **DNS Resolution**
-   - Resolves discovered domains using `dnsx`
-   - Filters only valid, reachable hosts
-   - Prevents downstream scans on dead domains
-
-3. **HTTP Probing**
-   - Probes resolved hosts across defined ports
-   - Detects live web services
-   - Collects metadata (status codes, titles, tech stack, IPs, CDN info)
-
-4. **Web Crawling**
-   - Crawls live web services using `katana`
-   - Extracts:
-     - All discovered URLs
-     - JavaScript files
-     - API and versioned endpoints
-   - Applies file-type exclusions to reduce noise
-
-5. **Port Scanning**
-   - Discovers open ports using `naabu`
-   - Skips common web ports already covered by HTTP probing
-   - Optionally performs service and OS detection with `nmap` (full mode)
-
-6. **Output Organization**
-   - Stores all results in a domain-named directory
-   - Preserves partial results if execution is interrupted
-   - Ensures no destructive operations are performed
-
----
+```text
+subfinder
+    |
+    v
+dnsx -> httpx -> katana
+    |
+    v
+naabu -> nmap (full mode)
+    |
+    v
+raw text results -> generate_report.py -> web/report.json
+                                           |
+                                           v
+                                http://localhost:9999
+```
 
 ## Scan Modes
 
-### Fast Mode
-Optimized for speed and rapid surface discovery.
+### Fast
 
-Characteristics:
-- Limited subdomain enumeration
-- Common HTTP ports only (80, 443)
-- Top 100 port scanning
-- No Nmap execution
-- Reduced crawl depth
+- Standard subdomain enumeration
+- HTTP ports `80` and `443`
+- Reduced crawler depth and concurrency
+- Top 100 port scan
+- Nmap disabled
 
-**Fast mode is approximately 55% faster** than full mode in typical environments, making it suitable for:
-- Initial recon
-- Time-constrained testing
-- Large scope enumeration
+### Full
 
----
-
-### Full Mode
-Designed for deeper and more exhaustive reconnaissance.
-
-Characteristics:
 - Recursive subdomain enumeration
-- Expanded HTTP port probing
-- Custom port list support
+- Expanded HTTP port coverage
+- Custom ports from `ports.txt`
 - Deeper crawling
-- Nmap service and OS detection enabled
-
-Recommended when accuracy and coverage are prioritized over speed.
-
----
-
-## Tools Used
-
-This script integrates the following tools:
-
-- `subfinder` – subdomain discovery  
-- `dnsx` – DNS resolution  
-- `httpx` – HTTP probing and fingerprinting  
-- `katana` – web crawling  
-- `naabu` – port discovery  
-- `nmap` – service and OS detection (full mode only)
-
-All tools must be installed and available in `$PATH`.
-
----
+- Nmap service, script, and OS detection
 
 ## Requirements
 
-- Linux or Unix-like environment
+- Linux or another Unix-like environment
 - Bash
-- Root privileges (required for certain scanning behaviors)
-- Installed dependencies:
-  - subfinder
-  - dnsx
-  - httpx
-  - katana
-  - naabu
-  - nmap (full mode only)
-- `ports.txt` file present in the working directory (required for full mode)
+- Python 3
+- Root privileges for scanning behavior that requires raw sockets
+- The following tools available in `PATH`:
+  - `subfinder`
+  - `dnsx`
+  - `httpx`
+  - `katana`
+  - `naabu`
+  - `nmap` for full mode
 
----
+Most reconnaissance tools in this project are maintained by [ProjectDiscovery](https://github.com/projectdiscovery). Follow their official installation instructions for your platform.
 
 ## Usage
 
+Make the script executable if necessary:
+
 ```bash
-sudo ./recon.sh (domain) (full or fast)
+chmod +x recon.sh
 ```
-Example :
-![](docs/Screenshot%202026-01-27%20at%203.49.44 PM.png)
+
+Run a fast scan:
+
+```bash
+sudo ./recon.sh example.com fast
+```
+
+Run a full scan:
+
+```bash
+sudo ./recon.sh example.com full
+```
+
+The script also accepts a pasted URL and normalizes it to a hostname:
+
+```bash
+sudo ./recon.sh https://example.com/some/path fast
+```
+
+When no mode is supplied, the script displays an interactive mode selector.
+
+## Dashboard
+
+After a scan exits, successfully or partially, the script:
+
+1. Reads the raw files in `results/<domain>/`.
+2. Generates `web/report.json`.
+3. Reuses the dashboard if it is already running.
+4. Otherwise starts a local Python web server on port `9999`.
+
+Open:
+
+```text
+http://localhost:9999
+```
+
+The dashboard includes:
+
+- Scan metadata and summary cards
+- Discovery coverage visualization
+- Searchable HTTP asset results
+- API, JavaScript, and crawled endpoint tabs
+- Copyable endpoint URLs
+- Resolved host and open-port views
+- Raw Nmap service output
+- Dark and light mode toggle with saved preference
+
+Use the refresh button after `report.json` changes. The dashboard fetches the latest report without relying on browser cache.
+
+## Port 9999 Behavior
+
+- If this dashboard is already running, the new report is reused automatically.
+- If another application owns port `9999`, the scan still generates `web/report.json` and prints a clear warning instead of replacing that service.
+- The server binds only to `127.0.0.1`, so it is not exposed to other machines by default.
+
+To start the dashboard manually:
+
+```bash
+python3 -m http.server 9999 --bind 127.0.0.1 --directory web
+```
+
+## Project Structure
+
+```text
+.
+├── recon.sh                    # Reconnaissance workflow and dashboard startup
+├── ports.txt                   # Port list used by full mode
+├── scripts/
+│   └── generate_report.py      # Converts raw scan files into JSON
+├── web/
+│   ├── index.html              # Dashboard structure
+│   ├── styles.css              # Responsive light/dark design
+│   ├── app.js                  # Rendering, filtering, tabs, and copying
+│   └── report.json             # Generated dashboard data
+└── results/                    # Local scan output; excluded from Git
+```
+
+## Data Handling
+
+Raw scan files remain under `results/<domain>/`. The dashboard reads only `web/report.json`; it does not execute scans or send results to an external service.
+
+Running a new scan overwrites `web/report.json` with the latest report. Real scan output and Python cache files are excluded from version control.
+
+## Safety
+
+Only scan assets for which you have explicit authorization. Reconnaissance and port scanning can trigger security monitoring, violate provider policies, or be unlawful when performed without permission.
+
+## Original CLI Preview
+
+![Reconnaissance CLI output](docs/Screenshot%202026-01-27%20at%203.49.44%E2%80%AFPM.png)
